@@ -107,7 +107,7 @@
      <x>0</x>
      <y>0</y>
      <width>591</width>
-     <height>30</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="FileMenu">
@@ -404,6 +404,9 @@
    </property>
   </action>
   <action name="boldAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="QtMyWps.qrc">
      <normaloff>:/images/bold.png</normaloff>:/images/bold.png</iconset>
@@ -419,6 +422,9 @@
    </property>
   </action>
   <action name="italicAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="QtMyWps.qrc">
      <normaloff>:/images/italic.png</normaloff>:/images/italic.png</iconset>
@@ -434,6 +440,9 @@
    </property>
   </action>
   <action name="underLineAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="QtMyWps.qrc">
      <normaloff>:/images/under.png</normaloff>:/images/under.png</iconset>
