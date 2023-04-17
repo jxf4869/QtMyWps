@@ -5,10 +5,14 @@
 #include <qfontdatabase.h>
 #include <QMdiSubWindow>
 #include <qfiledialog.h>
+#include <qcolordialog.h>
+#include <qdebug.h>
+
 QtMyWps::QtMyWps(QWidget* parent)
 	: QMainWindow(parent)
 {
 	ui.setupUi(this);
+	
 	//设置窗体的标题
 	setWindowTitle("我的WPS");
 	//设置窗体的图标
@@ -30,6 +34,13 @@ QtMyWps::QtMyWps(QWidget* parent)
 	m_WndMapper = new QSignalMapper(this);
 	connect(m_WndMapper, SIGNAL(mapped(QWidget*)),
 		this, SLOT(on_setActiveSubWindow(QWidget*)));
+
+	//将对齐方式活动按钮添加活动分组(保证互斥性只能选择一种)
+	QActionGroup* alignGroup = new QActionGroup(this);
+	alignGroup->addAction(ui.rightAlignAction);
+	alignGroup->addAction(ui.leftAlignAction);
+	alignGroup->addAction(ui.justifyAction);
+	alignGroup->addAction(ui.centerAction);
 }
 
 QtMyWps::~QtMyWps()
@@ -40,12 +51,12 @@ void QtMyWps::initFontSizeBox()
 	QFontDatabase fontData;
 	for each (int fontData in fontData.standardSizes())
 	{
-		ui.fontSizeComboBox->addItem(QString::number(fontData) + "号");
+		ui.fontSizeComboBox->addItem(QString::number(fontData) + " 号");
 	}
 	//设置默认字体的大小为系统的字体大小
 	QFont SysFont = QGuiApplication::font();    //拿到系统字体
 	int fontSize = SysFont.pointSize();         //转化字体的点大小
-	QString strFontSize = QString::number(fontSize) + "号";//具体的字符串(字号)
+	QString strFontSize = QString::number(fontSize) + " 号";//具体的字符串(字号)
 	int index = ui.fontSizeComboBox->findText(strFontSize);//用获取的字符串字号查找索引
 	ui.fontSizeComboBox->setCurrentIndex(index);//设置字号框当前位置
 }
@@ -121,6 +132,36 @@ void QtMyWps::docSaveAs()
 		statusBar()->showMessage("保存成功", 3000);
 	}
 }
+//打印文档
+void QtMyWps::docprint()
+{
+		//打印机像素为选中的打印机像素
+		QPrinter pter(QPrinter::PrinterResolution);
+		//显示打印界面
+		QPrintDialog* ddlg = new QPrintDialog(&pter, this);
+		if (actionChildWindow()) 
+		{
+			ddlg->setOption(QAbstractPrintDialog::PrintSelection, true);
+		}
+		//设置打印的标题
+		ddlg->setWindowTitle("打印文档");
+		ChildWindow* childWnd = actionChildWindow();//获取需要打印的子窗口
+		if (ddlg->exec() == QDialog::Accepted) 
+		{
+			childWnd->print(&pter);
+		}
+		delete ddlg;
+	
+}
+//打印预览
+void QtMyWps::docprintPreview()
+{
+	QPrinter pter;
+	QPrintPreviewDialog preView(&pter,this);
+	connect(&preView,&QPrintPreviewDialog::paintRequested,
+			this,&QtMyWps::on_printPreview);
+	preView.exec();
+}
 void QtMyWps::docUndo()
 {
 	if (actionChildWindow()) 
@@ -182,6 +223,62 @@ void QtMyWps::textUnderline()
 	if (actionChildWindow())
 	{
 		actionChildWindow()->setFormatOnSelectedWord(fmt);
+	}
+
+}
+void QtMyWps::textFamily(const QString& family)
+{
+	QTextCharFormat fmt;
+	fmt.setFontFamily(family);
+	if (actionChildWindow()) 
+	{
+		//设置字体
+		actionChildWindow()->setFormatOnSelectedWord(fmt);
+	}
+}
+void QtMyWps::textSize(const QString& ps)
+{
+	QStringList strSize=ps.split(" ");
+	qreal pointSize = strSize[0].toFloat();
+	if (strSize[0].toFloat() > 0)
+	{
+		QTextCharFormat fmt;
+		fmt.setFontPointSize(pointSize);
+
+		if (actionChildWindow())
+		{
+			//设置字体
+			actionChildWindow()->setFormatOnSelectedWord(fmt);
+		}
+	}
+}
+//文本颜色
+void QtMyWps::textColor()
+{
+	if (actionChildWindow())
+	{
+		QColor color= QColorDialog::getColor(actionChildWindow()->textColor(),this);
+		if (!color.isValid()) {//判断颜色合不合法
+			return;
+		}
+
+		QTextCharFormat fmt;
+		fmt.setForeground(color);//设置前景色
+		actionChildWindow()->setFormatOnSelectedWord(fmt);
+
+		QPixmap pix(16,16);
+		pix.fill(color);
+		ui.colorAction->setIcon(pix);
+
+	}
+}
+
+
+void QtMyWps::paraStyle(int nStyle)
+{
+	if (actionChildWindow()) 
+	{
+		actionChildWindow()->setParaSyle(nStyle);
 	}
 
 }
@@ -272,6 +369,69 @@ void QtMyWps::on_underLineAction_triggered()
 	textUnderline();
 }
 
+void QtMyWps::on_fontComboBox_activated(const QString& argl)
+{
+	textFamily(argl);
+}
+
+void QtMyWps::on_fontSizeComboBox_activated(const QString& argl)
+{
+	textSize(argl);
+}
+
+void QtMyWps::on_leftAlignAction_triggered()
+{
+	if (actionChildWindow()) 
+	{
+		actionChildWindow()->setAlignofDocumentText(1);
+	}
+}
+
+void QtMyWps::on_rightAlignAction_triggered()
+{
+	if (actionChildWindow())
+	{
+		actionChildWindow()->setAlignofDocumentText(2);
+	}
+}
+
+void QtMyWps::on_justifyAction_triggered()
+{
+	if (actionChildWindow())
+	{
+		actionChildWindow()->setAlignofDocumentText(4);
+	}
+}
+
+void QtMyWps::on_centerAction_triggered()
+{
+	if (actionChildWindow())
+	{
+		actionChildWindow()->setAlignofDocumentText(3);
+	}
+}
+
+void QtMyWps::on_colorAction_triggered()
+{
+	textColor();
+}
+
+void QtMyWps::on_symbolComboBox_activated(int index)
+{
+	paraStyle(index);
+}
+
+void QtMyWps::on_pintAction_triggered()
+{
+	docprint();
+}
+
+void QtMyWps::on_pintPreviewAction_triggered()
+{
+	docprintPreview();
+}
+
+
 //刷新菜单(保存/退出/..../下一个功能可以使用)
 void QtMyWps::on_freshMenus()
 {
@@ -289,9 +449,12 @@ void QtMyWps::on_freshMenus()
 	ui.cascadeAction->setEnabled(hasSubWindow);     //层叠
 	ui.nextAction->setEnabled(hasSubWindow);        //下一步
 	ui.previousAction->setEnabled(hasSubWindow);    //前一步
-
+	ui.colorAction->setEnabled(hasSubWindow);
+	
+	
 	//打开文档且有内容
-	bool hasDocContent = actionChildWindow() && (actionChildWindow()->textCursor().hasSelection());
+	bool hasDocContent = (actionChildWindow() &&
+					(actionChildWindow()->textCursor().hasSelection()));
 	//加粗
 	ui.boldAction->setEnabled(hasDocContent);
 	//倾斜
@@ -310,8 +473,7 @@ void QtMyWps::on_freshMenus()
 	ui.cutAction->setEnabled(hasDocContent);
 	//复制
 	ui.copyAction->setEnabled(hasDocContent);
-	//颜色
-	ui.colorAction->setEnabled(hasDocContent);
+	
 }
 
 
@@ -347,9 +509,6 @@ ChildWindow* QtMyWps::actionChildWindow()
 	{
 		return nullptr;
 	}
-
-
-
 }
 QMdiSubWindow* QtMyWps::findChildWindow(const QString& docname)
 {
@@ -362,10 +521,12 @@ QMdiSubWindow* QtMyWps::findChildWindow(const QString& docname)
 		}
 	}
 	return 0;
+	
 }
 void QtMyWps::on_newAction_triggered()
 {
 	decNew();
+	
 }
 
 void QtMyWps::on_addSubWindowListMenu()
@@ -408,6 +569,8 @@ void QtMyWps::on_addSubWindowListMenu()
 		m_WndMapper->setMapping(addAction, wnds.at(i));
 	}
 	formatEnabled();
+	
+
 }
 
 void QtMyWps::on_setActiveSubWindow(QWidget* widget)
@@ -422,6 +585,11 @@ void QtMyWps::on_setActiveSubWindow(QWidget* widget)
 	ui.mdiArea->setActiveSubWindow(ActionSubWindow);
 }
 
+void QtMyWps::on_printPreview(QPrinter* printer)
+{
+	actionChildWindow()->print(printer);
+}
+
 void QtMyWps::closeEvent(QCloseEvent* event)
 {
 	//关闭所有子窗口
@@ -430,7 +598,6 @@ void QtMyWps::closeEvent(QCloseEvent* event)
 	if (ui.mdiArea->currentSubWindow()) {//还有子窗口
 		//忽略此事件
 		event->ignore();
-
 	}
 	else//没有子窗口
 	{

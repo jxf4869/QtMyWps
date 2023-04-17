@@ -4,6 +4,10 @@
 #include <qtextdocumentwriter.h>
 #include <qmessagebox.h>
 #include <QCloseEvent>
+#include <QTextCursor>
+#include <QTextListFormat>
+#include <QTextBlockFormat>
+#include <QtWidgets>
 ChildWindow::ChildWindow()
 
 {
@@ -57,7 +61,7 @@ bool ChildWindow::loadDoc(const QString& docName)
 
 
 	}
-
+	return false;
 }
 
 void ChildWindow::setCurDoc(const QString& docName)
@@ -130,6 +134,97 @@ void ChildWindow::setFormatOnSelectedWord(const QTextCharFormat& fmt)
 	tcursor.mergeCharFormat(fmt);
 	mergeCurrentCharFormat(fmt);
 }
+void ChildWindow::setAlignofDocumentText(int alignType)
+{
+	if (alignType == 1)//左对齐
+	{
+		setAlignment(Qt::AlignLeft | Qt::AlignAbsolute);
+	}
+	else if (alignType == 2)//右对齐
+	{
+		setAlignment(Qt::AlignRight | Qt::AlignAbsolute);
+
+	}
+	else if (alignType == 3)//居中对齐
+	{
+		setAlignment(Qt::AlignCenter);
+
+	}
+	else if (alignType == 4)//二端对齐
+	{
+		setAlignment(Qt::AlignJustify);
+
+	}
+
+}
+void ChildWindow::setParaSyle(int pStyle)
+{
+	QTextCursor tcursor = textCursor();
+	QTextListFormat::Style sname;
+	if (pStyle != 0) 
+	{
+		switch (pStyle)
+		{
+		case 1://●
+			sname = QTextListFormat::ListDisc;
+			break;
+		
+		case 2://○
+			sname = QTextListFormat::ListCircle;
+			break;
+
+		case 3://■
+			sname = QTextListFormat::ListSquare;
+			break;
+			
+		case 4://1.2.3.
+			sname = QTextListFormat::ListDecimal;
+			break;
+
+		case 5://a.b.c.
+			sname = QTextListFormat::ListLowerAlpha;
+			break;
+		case 6://A.B.C
+			sname = QTextListFormat::ListUpperAlpha;
+			break;
+		case 7://ⅰ.ⅱ.ⅲ
+			sname = QTextListFormat::ListLowerRoman;
+			break;
+
+		case 8://Ⅰ.Ⅱ.Ⅲ
+			sname = QTextListFormat::ListUpperRoman;
+			break;
+
+		default:
+			break;
+		}
+		//编辑文本块
+		tcursor.beginEditBlock();
+		QTextBlockFormat tBlockFmt = tcursor.blockFormat();//光标所在的文本格式
+		QTextListFormat tListFmt;
+		if (tcursor.currentList()) //当期文本块是否有列表
+		{
+			tListFmt = tcursor.currentList()->format();
+		}
+		else
+		{
+			tListFmt.setIndent(tBlockFmt.indent() + 1);//设置缩进
+			tBlockFmt.setIndent(0);//块缩进
+			tcursor.setBlockFormat(tBlockFmt);
+		}
+		tListFmt.setStyle(sname);
+		tcursor.createList(tListFmt);
+
+		tcursor.endEditBlock();
+	}
+	else
+	{
+		QTextBlockFormat tbfmt;
+		tbfmt.setObjectIndex(-1);
+		tcursor.mergeBlockFormat(tbfmt);
+
+	}
+}
 void ChildWindow::closeEvent(QCloseEvent * event)
 {
 	if (promptSave()) 
@@ -167,6 +262,7 @@ bool ChildWindow::promptSave()
 	{
 		return true;
 	}
+	return false;
 }
 
 

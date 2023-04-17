@@ -49,4 +49,7 @@
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="QtMyWps.pro" />
+  </ItemGroup>
 </Project>
